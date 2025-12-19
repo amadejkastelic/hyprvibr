@@ -1,6 +1,6 @@
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/SharedDefs.hpp>
-#include <hyprland/src/debug/Log.hpp>
+#include <hyprland/src/debug/log/Logger.hpp>
 #include <hyprland/src/desktop/DesktopTypes.hpp>
 #include <hyprland/src/helpers/Monitor.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
@@ -62,9 +62,9 @@ static std::string buildMonitorCommand(const std::string& name, int resX, int re
 
 void onActiveWindowChange(const PHLWINDOW win) {
     if (win) {
-        Debug::log(TRACE, "[hyprvibr] Active window change: {} ({})", win->m_title, win->m_initialClass);
+        Log::logger->log(Log::TRACE, "[hyprvibr] Active window change: {} ({})", win->m_title, win->m_initialClass);
     } else {
-        Debug::log(TRACE, "[hyprvibr] No active window");
+        Log::logger->log(Log::TRACE, "[hyprvibr] No active window");
     }
     const auto CONFIG = win ? getAppConfig(win->m_initialClass) : nullptr;
     auto prevMon = g_activeMonitor.lock();
@@ -95,7 +95,7 @@ void onActiveWindowChange(const PHLWINDOW win) {
                 auto cmd = buildMonitorCommand(prevMon->m_name, (int)g_originalMonitorRule->resolution.x, (int)g_originalMonitorRule->resolution.y,
                                                 g_originalMonitorRule->refreshRate, g_originalMonitorRule->offset, g_originalMonitorRule->scale);
                 HyprlandAPI::invokeHyprctlCommand("keyword", "monitor " + cmd);
-                Debug::log(INFO, "[hyprvibr] Restored monitor {}", prevMon->m_name);
+                Log::logger->log(Log::INFO, "[hyprvibr] Restored monitor {}", prevMon->m_name);
                 g_originalMonitorRule.reset();
             }
         }
@@ -118,13 +118,13 @@ void onActiveWindowChange(const PHLWINDOW win) {
                     auto cmd = buildMonitorCommand(newMon->m_name, CONFIG->resX, CONFIG->resY, refreshRate,
                                                     newMon->m_activeMonitorRule.offset, newMon->m_activeMonitorRule.scale);
                     HyprlandAPI::invokeHyprctlCommand("keyword", "monitor " + cmd);
-                    Debug::log(INFO, "[hyprvibr] Changed resolution to {}x{}@{} on {}", CONFIG->resX, CONFIG->resY, refreshRate, newMon->m_name);
+                    Log::logger->log(Log::INFO, "[hyprvibr] Changed resolution to {}x{}@{} on {}", CONFIG->resX, CONFIG->resY, refreshRate, newMon->m_name);
                 }
             } else if (g_activeResX > 0 && g_activeResY > 0 && g_originalMonitorRule.has_value()) {
                 auto cmd = buildMonitorCommand(newMon->m_name, (int)g_originalMonitorRule->resolution.x, (int)g_originalMonitorRule->resolution.y,
                                                 g_originalMonitorRule->refreshRate, g_originalMonitorRule->offset, g_originalMonitorRule->scale);
                 HyprlandAPI::invokeHyprctlCommand("keyword", "monitor " + cmd);
-                Debug::log(INFO, "[hyprvibr] Restored monitor {}", newMon->m_name);
+                Log::logger->log(Log::INFO, "[hyprvibr] Restored monitor {}", newMon->m_name);
                 g_originalMonitorRule.reset();
             }
         }
