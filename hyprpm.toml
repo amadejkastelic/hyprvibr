@@ -3,6 +3,7 @@ name = "hyprvibr"
 authors = ["devcexx"]
 commit_pins = [
     ["386376400119dd46a767c9f8c8791fd22c7b6e61", "803ee2b24005d9dbc75a1e97dda49b8a62fb683b"], # 0.52.2
+    ["dd220efe7b1e292415bd0ea7161f63df9c95bfd3", "1176c131f054cbf62d4a50239a4f9ce1d786f954"], # 0.53.3
 ]
 
 [hyprvibr]
