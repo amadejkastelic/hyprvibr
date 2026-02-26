@@ -6,7 +6,7 @@
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/protocols/core/Compositor.hpp>
 #include <hyprland/src/desktop/state/FocusState.hpp>
-#include <any>
+#include <hyprland/src/event/EventBus.hpp>
 #include <array>
 #include <format>
 #include <hyprutils/string/ConstVarList.hpp>
@@ -147,16 +147,15 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         throw std::runtime_error("[hyprvibr] Version mismatch");
     }
 
-    static auto P = HyprlandAPI::registerCallbackDynamic(PHANDLE, "activeWindow", [&](void* self, SCallbackInfo& info, std::any data) {
-        const auto WIN = std::any_cast<PHLWINDOW>(data);
+    static auto P = Event::bus()->m_events.window.active.listen([](PHLWINDOW WIN, Desktop::eFocusReason reason) {
         onActiveWindowChange(WIN);
     });
 
-    static auto P2 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "preConfigReload", [&](void* self, SCallbackInfo& info, std::any data) {
+    static auto P2 = Event::bus()->m_events.config.preReload.listen([]() {
         g_appConfigs.clear();
     });
 
-    static auto P3 = HyprlandAPI::registerCallbackDynamic(PHANDLE, "configReloaded", [&](void* self, SCallbackInfo& info, std::any data) {
+    static auto P3 = Event::bus()->m_events.config.reloaded.listen([]() {
         onActiveWindowChange(Desktop::focusState()->window());
     });
 
