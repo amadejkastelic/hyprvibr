@@ -11,6 +11,7 @@
 #include <format>
 #include <hyprutils/string/ConstVarList.hpp>
 #include <hyprland/src/desktop/view/Window.hpp>
+#include <hyprland/src/config/shared/monitor/MonitorRule.hpp>
 
 #include "globals.hpp"
 
@@ -44,7 +45,7 @@ PHLMONITORREF g_activeMonitor;
 float g_activeMonitorSat;
 int g_activeResX = -1;
 int g_activeResY = -1;
-std::optional<SMonitorRule> g_originalMonitorRule;
+std::optional<Config::CMonitorRule> g_originalMonitorRule;
 
 // Evily stoled from libvibrant
 const Mat3x3 calc_ctm_matrix(float sat) {
@@ -92,8 +93,8 @@ void onActiveWindowChange(const PHLWINDOW win) {
             prevMon->setCTM(Mat3x3::identity());
 
             if (g_originalMonitorRule.has_value()) {
-                auto cmd = buildMonitorCommand(prevMon->m_name, (int)g_originalMonitorRule->resolution.x, (int)g_originalMonitorRule->resolution.y,
-                                                g_originalMonitorRule->refreshRate, g_originalMonitorRule->offset, g_originalMonitorRule->scale);
+                auto cmd = buildMonitorCommand(prevMon->m_name, (int)g_originalMonitorRule->m_resolution.x, (int)g_originalMonitorRule->m_resolution.y,
+                                                g_originalMonitorRule->m_refreshRate, g_originalMonitorRule->m_offset, g_originalMonitorRule->m_scale);
                 HyprlandAPI::invokeHyprctlCommand("keyword", "monitor " + cmd);
                 Log::logger->log(Log::INFO, "[hyprvibr] Restored monitor {}", prevMon->m_name);
                 g_originalMonitorRule.reset();
@@ -116,13 +117,13 @@ void onActiveWindowChange(const PHLWINDOW win) {
                 if (currentResX != CONFIG->resX || currentResY != CONFIG->resY) {
                     float refreshRate = CONFIG->refreshRate > 0 ? CONFIG->refreshRate : 60.0f;
                     auto cmd = buildMonitorCommand(newMon->m_name, CONFIG->resX, CONFIG->resY, refreshRate,
-                                                    newMon->m_activeMonitorRule.offset, newMon->m_activeMonitorRule.scale);
+                                                    newMon->m_activeMonitorRule.m_offset, newMon->m_activeMonitorRule.m_scale);
                     HyprlandAPI::invokeHyprctlCommand("keyword", "monitor " + cmd);
                     Log::logger->log(Log::INFO, "[hyprvibr] Changed resolution to {}x{}@{} on {}", CONFIG->resX, CONFIG->resY, refreshRate, newMon->m_name);
                 }
             } else if (g_activeResX > 0 && g_activeResY > 0 && g_originalMonitorRule.has_value()) {
-                auto cmd = buildMonitorCommand(newMon->m_name, (int)g_originalMonitorRule->resolution.x, (int)g_originalMonitorRule->resolution.y,
-                                                g_originalMonitorRule->refreshRate, g_originalMonitorRule->offset, g_originalMonitorRule->scale);
+                auto cmd = buildMonitorCommand(newMon->m_name, (int)g_originalMonitorRule->m_resolution.x, (int)g_originalMonitorRule->m_resolution.y,
+                                                g_originalMonitorRule->m_refreshRate, g_originalMonitorRule->m_offset, g_originalMonitorRule->m_scale);
                 HyprlandAPI::invokeHyprctlCommand("keyword", "monitor " + cmd);
                 Log::logger->log(Log::INFO, "[hyprvibr] Restored monitor {}", newMon->m_name);
                 g_originalMonitorRule.reset();
@@ -159,6 +160,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         onActiveWindowChange(Desktop::focusState()->window());
     });
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     HyprlandAPI::addConfigKeyword(
         PHANDLE, "hyprvibr-app",
         [](const char* l, const char* r) -> Hyprlang::CParseResult {
@@ -195,6 +198,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
             return result;
         },
         Hyprlang::SHandlerOptions{});
+#pragma GCC diagnostic pop
 
     HyprlandAPI::addNotification(PHANDLE, "Hyprvibr loaded", CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
     return {"hyprvibr", "A plugin to customize monitor saturation per focused window", "devcexx", "1.0"};
