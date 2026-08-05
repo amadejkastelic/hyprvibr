@@ -8,12 +8,10 @@
 #include <hyprland/src/event/EventBus.hpp>
 #include <array>
 #include <format>
-#include <hyprutils/string/ConstVarList.hpp>
 #include <hyprutils/utils/ScopeGuard.hpp>
 #include <hyprland/src/desktop/view/Window.hpp>
 #include <hyprland/src/config/shared/monitor/MonitorRule.hpp>
 #include <hyprland/src/config/shared/monitor/MonitorRuleManager.hpp>
-#include <hyprland/src/config/ConfigManager.hpp>
 #include <hyprland/src/config/lua/bindings/LuaBindingsInternal.hpp>
 #include <luaconf.h>
 #include "globals.hpp"
@@ -21,8 +19,6 @@
 extern "C" {
 #include <lua.h>
 }
-
-using namespace Hyprutils::String;
 
 // Do NOT change this function.
 APICALL EXPORT std::string PLUGIN_API_VERSION() {
@@ -270,53 +266,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         onActiveWindowChange(Desktop::focusState()->window());
     });
 
-    if (Config::mgr()->type() == Config::CONFIG_LEGACY) {
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            HyprlandAPI::addConfigKeyword(
-                PHANDLE, "hyprvibr-app",
-                [](const char* l, const char* r) -> Hyprlang::CParseResult {
-                    const std::string      str = r;
-                    CConstVarList          data(str, 0, ',', true);
-
-                    Hyprlang::CParseResult result;
-
-                    if (data.size() < 2 || data.size() > 5) {
-                        result.setError("hyprvibr-app requires 2-5 params: class,sat[,resX,resY[,refreshRate]]");
-                        return result;
-                    }
-
-                    try {
-                        SAppConfig config;
-                        config.szClass = data[0];
-                        config.sat = std::stof(std::string{data[1]});
-
-                        if (data.size() >= 4) {
-                            config.resX = std::stoi(std::string{data[2]});
-                            config.resY = std::stoi(std::string{data[3]});
-                        }
-
-                        if (data.size() >= 5) {
-                            config.refreshRate = std::stof(std::string{data[4]});
-                        }
-
-                        pushAppConfig(config);
-                    } catch (std::exception& e) {
-                        result.setError("failed to parse line");
-                        return result;
-                    }
-
-                    return result;
-                },
-                Hyprlang::SHandlerOptions{});
-        #pragma GCC diagnostic pop
-    } else if (Config::mgr()->type() == Config::CONFIG_LUA) {
-        HyprlandAPI::addLuaFunction(PHANDLE, "hyprvibr", "hyprvibr_app", ::luaAddApp);
-    } else {
-        HyprlandAPI::addNotification(PHANDLE, "[hyprvibr] Failure in initialization: Unrecognized Hyprland configuration type",
-                                     CHyprColor{1.0, 0.2, 0.2, 1.0}, 5000);
-        throw std::runtime_error("[hyprvibr] Unsupported Hyprland configuration type");
-    }
+    HyprlandAPI::addLuaFunction(PHANDLE, "hyprvibr", "hyprvibr_app", ::luaAddApp);
 
     HyprlandAPI::addNotification(PHANDLE, "Hyprvibr loaded", CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
     return {"hyprvibr", "A plugin to customize monitor saturation per focused window", "devcexx", "1.0"};
